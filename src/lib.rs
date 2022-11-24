@@ -54,20 +54,21 @@ where [(); (N+63)/64]: Sized {
         ret
     }
 
-    /// Sets the bit at index position to true
+    /// Sets the bit at position to true
     pub fn set_bit(&mut self, position: usize) {
         let i = position >> 6;
         let offset = position & 63;
         self.state[i] |= 1_u64<<offset;
     }
     
-    /// Sets the bit at index position to false
+    /// Sets the bit at position to false
     pub fn unset_bit(&mut self, position: usize) {
         let i = position >> 6;
         let offset = position & 63;
         self.state[i] &= !(1_u64<<offset);
     }
 
+    /// Sets the bit at position to value
     pub fn set(&mut self, position: usize, value: bool) {
         if value {
             self.set_bit(position)
@@ -78,15 +79,8 @@ where [(); (N+63)/64]: Sized {
     
     /// Get the bit at index position
     /// Panics if position is out of range
-    pub fn get_bit(&self, position: usize) -> bool {
-        // Optimization for 128 wide bitsets
-        if (N+63)/64 == 2 {
-            unsafe {
-                let x = std::mem::transmute::<[u64; 2], u128>([self.state[0], self.state[1]]);
-                return x>>position & 1 == 1
-            }
-        }
-        let i = position >> 6;
+    pub fn get(&self, position: usize) -> bool {
+        let i = position / 64;
         let offset = position & 63;
         (self.state[i]>>offset) & 1 == 1
     }
@@ -127,7 +121,7 @@ where [(); (N+63)/64]: Sized {
         for i in 0..(N+63)/64 {
             result += "_";
             for j in 0..64 {
-                result += if self.get_bit(((N+63)/64 - i - 1) * 64 + (63 - j)) {
+                result += if self.get(((N+63)/64 - i - 1) * 64 + (63 - j)) {
                     "1"
                 } else {
                     "0"
@@ -544,7 +538,7 @@ mod tests {
         let mut y = false;
         b.iter(|| {
             for i in 0..128 {
-                y |= x.get_bit(i);
+                y |= x.get(i);
             }
             y
         })
