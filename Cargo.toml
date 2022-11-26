@@ -5,6 +5,12 @@ edition = "2021"
 
 [dependencies]
 
+[dev-dependencies]
+criterion = "0.3"
+
 [toolchain]
 channel = "nightly"
 
+[[bench]]
+name = "comparison"
+harness = false
