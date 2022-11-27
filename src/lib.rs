@@ -284,13 +284,11 @@ impl<const N: usize> ShlAssign<usize> for Bitset<N>
 where [(); (N+63)/64]: Sized {
     #[inline]
     fn shl_assign(&mut self, rhs: usize) {
-        let result;
-        if (N+63)/64 == 2 { // Optimization for 128 wide bitsets
-            result = shl_assign_helper(*self, rhs);
+        *self = if (N+63)/64 == 2 { // Optimization for 128 wide bitsets
+            shl_assign_helper(*self, rhs)
         } else {
-            result = *self >> rhs;
-        }
-        self.state = result.state;
+            *self << rhs
+        };
     }
 }
 
@@ -340,13 +338,11 @@ impl<const N: usize> ShrAssign<usize> for Bitset<N>
 where [(); (N+63)/64]: Sized {
     #[inline]
     fn shr_assign(&mut self, rhs: usize) {
-        let result;
-        if (N+63)/64 == 2 { // Optimization for 128 wide bitsets
-            result = shr_assign_helper(*self, rhs);
+        *self = if (N+63)/64 == 2 { // Optimization for 128 wide bitsets
+            shr_assign_helper(*self, rhs)
         } else {
-            result = *self >> rhs;
-        }
-        self.state = result.state;
+            *self >> rhs
+        };
     }
 }
 

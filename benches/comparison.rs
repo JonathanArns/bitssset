@@ -27,6 +27,16 @@ fn bitssset_bench(c: &mut Criterion) {
         let rhs = BS::with_bit_set(67);
         b.iter(|| {lhs |= rhs; lhs})
     });
+    group.bench_function("XOR", |b| {
+        let lhs = BS::with_bit_set(57);
+        let rhs = BS::with_bit_set(67);
+        b.iter(|| lhs ^ rhs)
+    });
+    group.bench_function("XOR_ASSIGN", |b| {
+        let mut lhs = BS::with_bit_set(57);
+        let rhs = BS::with_bit_set(67);
+        b.iter(|| {lhs ^= rhs; lhs})
+    });
     group.bench_function("SHL", |b| {
         let mut set = BS::with_bit_set(57);
         set.set_bit(67);
