@@ -6,8 +6,8 @@ use std::cmp::{Eq, PartialEq};
 /// An efficient Bitset with a known size at compile-time.
 /// N defines the length in bits.
 ///
-/// Bits outside of the size of the bitset are undefined, but can be accessed.
-/// They might have any value.
+/// The upper bits from the bitset's size to the next full 64 bits are outside of the size of the bitset, but can be accessed.
+/// This does not cause undefined behavior, but this crate does not make guarantees about their value.
 #[derive(Clone, Copy, Hash)]
 pub struct Bitset<const N: usize>
 where [(); (N+63)/64]: Sized {
