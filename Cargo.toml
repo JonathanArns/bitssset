@@ -3,7 +3,7 @@ name = "bitssset"
 version = "0.1.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
-description = "A performance-first, fixed-size bitset implementation for specific requirements"
+description = "A performance-first, fixed-size bitset implementation for battlesnake"
 repository = "https://github.com/JonathanArns/bitssset"
 
 [dependencies]
