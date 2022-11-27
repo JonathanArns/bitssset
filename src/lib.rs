@@ -1,6 +1,4 @@
-#![feature(test, generic_const_exprs)]
-
-extern crate test;
+#![feature(generic_const_exprs)]
 
 use std::ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Not, Shl, ShlAssign, Shr, ShrAssign};
 use std::cmp::{Eq, PartialEq};
@@ -19,12 +17,14 @@ where [(); (N+63)/64]: Sized {
 impl<const N: usize> Bitset<N>
 where [(); (N+63)/64]: Sized {
 
+    #[inline]
     pub const fn new() -> Self {
         Bitset{
             state: [0; (N+63)/64]
         }
     }
 
+    #[inline]
     pub const fn from_array(arr: [u64; (N+63)/64]) -> Self {
         Bitset{
             state: arr
@@ -32,6 +32,7 @@ where [(); (N+63)/64]: Sized {
     }
 
     /// Returns a new Bitset with only the specifies bit set to true
+    #[inline]
     pub fn with_bit_set(idx: usize) -> Self {
         let mut ret = Self::new();
         ret.set_bit(idx);
@@ -41,6 +42,7 @@ where [(); (N+63)/64]: Sized {
     /// Creates a bitset with all bits in the specified range set.
     /// Note that the bitset might contain more bits, which are still
     /// accessible but will not be set in this function.
+    #[inline]
     pub const fn with_all_bits_set() -> Self {
         let mut ret = Self::new();
         let mut i = 0;
@@ -55,6 +57,7 @@ where [(); (N+63)/64]: Sized {
     }
 
     /// Sets the bit at position to true
+    #[inline]
     pub fn set_bit(&mut self, position: usize) {
         let i = position >> 6;
         let offset = position & 63;
@@ -62,6 +65,7 @@ where [(); (N+63)/64]: Sized {
     }
     
     /// Sets the bit at position to false
+    #[inline]
     pub fn unset_bit(&mut self, position: usize) {
         let i = position >> 6;
         let offset = position & 63;
@@ -69,6 +73,7 @@ where [(); (N+63)/64]: Sized {
     }
 
     /// Sets the bit at position to value
+    #[inline]
     pub fn set(&mut self, position: usize, value: bool) {
         if value {
             self.set_bit(position)
@@ -79,6 +84,7 @@ where [(); (N+63)/64]: Sized {
     
     /// Get the bit at index position
     /// Panics if position is out of range
+    #[inline]
     pub fn get(&self, position: usize) -> bool {
         let i = position / 64;
         let offset = position & 63;
@@ -86,6 +92,7 @@ where [(); (N+63)/64]: Sized {
     }
 
     /// Returns `true` if at least one bit is set to `true`
+    #[inline]
     pub fn any(&self) -> bool {
         for x in self.state {
             if x != 0 {
@@ -96,6 +103,7 @@ where [(); (N+63)/64]: Sized {
     }
 
     /// Returns the number of ones in the Bitset
+    #[inline]
     pub fn count_ones(&self) -> u32 {
         let mut ones = 0;
         for x in self.state {
@@ -105,6 +113,7 @@ where [(); (N+63)/64]: Sized {
     }
 
     /// Returns the number of zeros in the Bitset
+    #[inline]
     pub fn count_zeros(&self) -> u32 {
         let mut zeros = 0;
         for x in self.state {
@@ -134,6 +143,8 @@ where [(); (N+63)/64]: Sized {
 
 impl<const N: usize> PartialEq<Self> for Bitset<N>
 where [(); (N+63)/64]: Sized {
+
+    #[inline]
     fn eq(&self, other: &Self) -> bool {
         for i in 0..(N+63)/64 {
             if self.state[i] != other.state[i] {
@@ -149,6 +160,8 @@ impl<const N: usize> Eq for Bitset<N> where [(); (N+63)/64]: Sized {}
 impl<const N: usize> Not for Bitset<N>
 where [(); (N+63)/64]: Sized {
     type Output = Self;
+
+    #[inline]
     fn not(self) -> Self {
         let mut ret = Self::new();
         for i in 0..(N+63)/64 {
@@ -161,20 +174,9 @@ where [(); (N+63)/64]: Sized {
 impl<const N: usize> BitAnd for Bitset<N>
 where [(); (N+63)/64]: Sized {
     type Output = Self;
-    fn bitand(self, rhs: Self) -> Self {
-        // Optimization for 128 wide bitsets
-        if (N+63)/64 == 2 {
-            unsafe {
-                let lhs = std::mem::transmute::<[u64; 2], u128>([self.state[0], self.state[1]]);
-                let rhs = std::mem::transmute::<[u64; 2], u128>([rhs.state[0], rhs.state[1]]);
-                let res_u128 = lhs & rhs;
-                let res_arr = std::mem::transmute::<u128, [u64; 2]>(res_u128);
-                let mut res = Self::new();
-                res.state.copy_from_slice(&res_arr);
-                return res
-            }
-        }
 
+    #[inline]
+    fn bitand(self, rhs: Self) -> Self {
         let mut ret = Self::new();
         for i in 0..(N+63)/64 {
             ret.state[i] = self.state[i] & rhs.state[i];
@@ -185,42 +187,19 @@ where [(); (N+63)/64]: Sized {
 
 impl<const N: usize> BitAndAssign for Bitset<N>
 where [(); (N+63)/64]: Sized {
+    #[inline]
     fn bitand_assign(&mut self, rhs: Self) {
-        // Optimization for 128 wide bitsets
-        if (N+63)/64 == 2 {
-            unsafe {
-                let lhs = std::mem::transmute::<[u64; 2], u128>([self.state[0], self.state[1]]);
-                let rhs = std::mem::transmute::<[u64; 2], u128>([rhs.state[0], rhs.state[1]]);
-                let res_u128 = lhs & rhs;
-                let res_arr = std::mem::transmute::<u128, [u64; 2]>(res_u128);
-                self.state.copy_from_slice(&res_arr);
-                return
-            }
-        }
-
-        for i in 0..(N+63)/64 {
-            self.state[i] &= rhs.state[i];
-        }
+        let result = *self & rhs;
+        self.state = result.state;
     }
 }
 
 impl<const N: usize> BitOr for Bitset<N>
 where [(); (N+63)/64]: Sized {
     type Output = Self;
-    fn bitor(self, rhs: Self) -> Self {
-        // Optimization for 128 wide bitsets
-        if (N+63)/64 == 2 {
-            unsafe {
-                let lhs = std::mem::transmute::<[u64; 2], u128>([self.state[0], self.state[1]]);
-                let rhs = std::mem::transmute::<[u64; 2], u128>([rhs.state[0], rhs.state[1]]);
-                let res_u128 = lhs | rhs;
-                let res_arr = std::mem::transmute::<u128, [u64; 2]>(res_u128);
-                let mut res = Self::new();
-                res.state.copy_from_slice(&res_arr);
-                return res
-            }
-        }
 
+    #[inline]
+    fn bitor(self, rhs: Self) -> Self {
         let mut ret = Self::new();
         for i in 0..(N+63)/64 {
             ret.state[i] = self.state[i] | rhs.state[i];
@@ -231,42 +210,19 @@ where [(); (N+63)/64]: Sized {
 
 impl<const N: usize> BitOrAssign for Bitset<N>
 where [(); (N+63)/64]: Sized {
+    #[inline]
     fn bitor_assign(&mut self, rhs: Self) {
-        // Optimization for 128 wide bitsets
-        if (N+63)/64 == 2 {
-            unsafe {
-                let lhs = std::mem::transmute::<[u64; 2], u128>([self.state[0], self.state[1]]);
-                let rhs = std::mem::transmute::<[u64; 2], u128>([rhs.state[0], rhs.state[1]]);
-                let res_u128 = lhs | rhs;
-                let res_arr = std::mem::transmute::<u128, [u64; 2]>(res_u128);
-                self.state.copy_from_slice(&res_arr);
-                return
-            }
-        }
-
-        for i in 0..(N+63)/64 {
-            self.state[i] |= rhs.state[i];
-        }
+        let result = *self | rhs;
+        self.state = result.state;
     }
 }
 
 impl<const N: usize> BitXor for Bitset<N>
 where [(); (N+63)/64]: Sized {
     type Output = Self;
-    fn bitxor(self, rhs: Self) -> Self {
-        // Optimization for 128 wide bitsets
-        if (N+63)/64 == 2 {
-            unsafe {
-                let lhs = std::mem::transmute::<[u64; 2], u128>([self.state[0], self.state[1]]);
-                let rhs = std::mem::transmute::<[u64; 2], u128>([rhs.state[0], rhs.state[1]]);
-                let res_u128 = lhs ^ rhs;
-                let res_arr = std::mem::transmute::<u128, [u64; 2]>(res_u128);
-                let mut res = Self::new();
-                res.state.copy_from_slice(&res_arr);
-                return res
-            }
-        }
 
+    #[inline]
+    fn bitxor(self, rhs: Self) -> Self {
         let mut ret = Self::new();
         for i in 0..(N+63)/64 {
             ret.state[i] = self.state[i] ^ rhs.state[i];
@@ -277,41 +233,19 @@ where [(); (N+63)/64]: Sized {
 
 impl<const N: usize> BitXorAssign for Bitset<N>
 where [(); (N+63)/64]: Sized {
+    #[inline]
     fn bitxor_assign(&mut self, rhs: Self) {
-        // Optimization for 128 wide bitsets
-        if (N+63)/64 == 2 {
-            unsafe {
-                let lhs = std::mem::transmute::<[u64; 2], u128>([self.state[0], self.state[1]]);
-                let rhs = std::mem::transmute::<[u64; 2], u128>([rhs.state[0], rhs.state[1]]);
-                let res_u128 = lhs ^ rhs;
-                let res_arr = std::mem::transmute::<u128, [u64; 2]>(res_u128);
-                self.state.copy_from_slice(&res_arr);
-                return
-            }
-        }
-
-        for i in 0..(N+63)/64 {
-            self.state[i] ^= rhs.state[i];
-        }
+        let result = *self ^ rhs;
+        self.state = result.state;
     }
 }
 
 impl<const N: usize> Shl<usize> for Bitset<N>
 where [(); (N+63)/64]: Sized {
     type Output = Self;
-    fn shl(self, rhs: usize) -> Self {
-        // Optimization for 128 wide bitsets
-        if (N+63)/64 == 2 {
-            unsafe {
-                let x = std::mem::transmute::<[u64; 2], u128>([self.state[0], self.state[1]]);
-                let res_u128 = x << rhs;
-                let res_arr = std::mem::transmute::<u128, [u64; 2]>(res_u128);
-                let mut ret2 = Self::new();
-                ret2.state.copy_from_slice(&res_arr);
-                return ret2
-            }
-        }
 
+    #[inline]
+    fn shl(self, rhs: usize) -> Self {
         let mut ret = Self::new();
         let trailing_zeros = rhs >> 6;
         let actual_shift = rhs & 63;
@@ -333,55 +267,39 @@ where [(); (N+63)/64]: Sized {
     }
 }
 
+#[inline(always)]
+fn shl_assign_helper<const N: usize>(lhs: Bitset<N>, rhs: usize) -> Bitset<N>
+where [(); (N+63)/64]: Sized {
+    unsafe {
+        let x = std::mem::transmute::<[u64; 2], u128>([lhs.state[0], lhs.state[1]]);
+        let res_u128 = x << rhs;
+        let res_arr = std::mem::transmute::<u128, [u64; 2]>(res_u128);
+        let mut ret2 = Bitset::<N>::new();
+        ret2.state.copy_from_slice(&res_arr);
+        return ret2
+    }
+}
+
 impl<const N: usize> ShlAssign<usize> for Bitset<N>
 where [(); (N+63)/64]: Sized {
+    #[inline]
     fn shl_assign(&mut self, rhs: usize) {
-        // Optimization for 128 wide bitsets
-        if (N+63)/64 == 2 {
-            unsafe {
-                let x = std::mem::transmute::<[u64; 2], u128>([self.state[0], self.state[1]]);
-                let res_u128 = x << rhs;
-                let res_arr = std::mem::transmute::<u128, [u64; 2]>(res_u128);
-                self.state.copy_from_slice(&res_arr);
-                return
-            }
-        }
-
-        let trailing_zeros = rhs >> 6;
-        let actual_shift = rhs & 63;
-        let l = (N+63)/64;
-        if actual_shift == 0 {
-            for i in 0..(l-trailing_zeros) {
-                self.state[l-i-1] = self.state[l-i-1-trailing_zeros];
-            }
+        let result;
+        if (N+63)/64 == 2 { // Optimization for 128 wide bitsets
+            result = shl_assign_helper(*self, rhs);
         } else {
-            for i in 0..(l-1-trailing_zeros) {
-                self.state[l-i-1] = (self.state[l-i-1-trailing_zeros]<<actual_shift) | (self.state[l-i-2-trailing_zeros]>>(64-actual_shift));
-            }
-            self.state[trailing_zeros] = self.state[0]<<actual_shift;
+            result = *self >> rhs;
         }
-        for i in 0..trailing_zeros {
-            self.state[i] = 0;
-        }
+        self.state = result.state;
     }
 }
 
 impl<const N: usize> Shr<usize> for Bitset<N>
 where [(); (N+63)/64]: Sized {
     type Output = Self;
-    fn shr(self, rhs: usize) -> Self {
-        // Optimization for 128 wide bitsets
-        if (N+63)/64 == 2 {
-            unsafe {
-                let x = std::mem::transmute::<[u64; 2], u128>([self.state[0], self.state[1]]);
-                let res_u128 = x >> rhs;
-                let res_arr = std::mem::transmute::<u128, [u64; 2]>(res_u128);
-                let mut ret2 = Self::new();
-                ret2.state.copy_from_slice(&res_arr);
-                return ret2
-            }
-        }
 
+    #[inline]
+    fn shr(self, rhs: usize) -> Self {
         let mut ret = Self::new();
         let leading_zeros = rhs >> 6;
         let actual_shift = rhs & 63;
@@ -405,45 +323,36 @@ where [(); (N+63)/64]: Sized {
     }
 }
 
+#[inline(always)]
+fn shr_assign_helper<const N: usize>(lhs: Bitset<N>, rhs: usize) -> Bitset<N>
+where [(); (N+63)/64]: Sized {
+    unsafe {
+        let x = std::mem::transmute::<[u64; 2], u128>([lhs.state[0], lhs.state[1]]);
+        let res_u128 = x >> rhs;
+        let res_arr = std::mem::transmute::<u128, [u64; 2]>(res_u128);
+        let mut ret2 = Bitset::<N>::new();
+        ret2.state.copy_from_slice(&res_arr);
+        return ret2
+    }
+}
+
 impl<const N: usize> ShrAssign<usize> for Bitset<N>
 where [(); (N+63)/64]: Sized {
+    #[inline]
     fn shr_assign(&mut self, rhs: usize) {
-        // Optimization for 128 wide bitsets
-        if (N+63)/64 == 2 {
-            unsafe {
-                let x = std::mem::transmute::<[u64; 2], u128>([self.state[0], self.state[1]]);
-                let res_u128 = x >> rhs;
-                let res_arr = std::mem::transmute::<u128, [u64; 2]>(res_u128);
-                self.state.copy_from_slice(&res_arr);
-                return
-            }
-        }
-
-        let leading_zeros = rhs >> 6;
-        let actual_shift = rhs & 63;
-        let l = (N+63)/64;
-        if actual_shift == 0 {
-            for i in 0..(l-leading_zeros) {
-                self.state[i] = self.state[i+leading_zeros];
-            }
+        let result;
+        if (N+63)/64 == 2 { // Optimization for 128 wide bitsets
+            result = shr_assign_helper(*self, rhs);
         } else {
-            for i in 0..(l-1-leading_zeros) {
-                self.state[i] = (self.state[i+leading_zeros]>>actual_shift) | (self.state[i+1+leading_zeros]<<(64-actual_shift));
-            }
-            if leading_zeros < l {
-                self.state[l-1-leading_zeros] = self.state[l-1]>>actual_shift;
-            }
+            result = *self >> rhs;
         }
-        for i in 0..leading_zeros {
-            self.state[l-1-i] = 0;
-        }
+        self.state = result.state;
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use test::Bencher;
 
     #[test]
     fn test_shl() {

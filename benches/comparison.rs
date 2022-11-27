@@ -6,17 +6,7 @@ use bitssset;
 
 fn bitssset_bench(c: &mut Criterion) {
     let mut group = c.benchmark_group("bitssset");
-    type BS = bitssset::Bitset::<128>;
-    group.bench_function("OR", |b| {
-        let lhs = BS::with_bit_set(57);
-        let rhs = BS::with_bit_set(67);
-        b.iter(|| lhs | rhs)
-    });
-    group.bench_function("OR_ASSIGN", |b| {
-        let mut lhs = BS::with_bit_set(57);
-        let rhs = BS::with_bit_set(67);
-        b.iter(|| {lhs |= rhs; lhs})
-    });
+    type BS = bitssset::Bitset::<256>;
     group.bench_function("AND", |b| {
         let lhs = BS::with_bit_set(57);
         let rhs = BS::with_bit_set(67);
@@ -26,6 +16,16 @@ fn bitssset_bench(c: &mut Criterion) {
         let mut lhs = BS::with_bit_set(57);
         let rhs = BS::with_bit_set(67);
         b.iter(|| {lhs &= rhs; lhs})
+    });
+    group.bench_function("OR", |b| {
+        let lhs = BS::with_bit_set(57);
+        let rhs = BS::with_bit_set(67);
+        b.iter(|| lhs | rhs)
+    });
+    group.bench_function("OR_ASSIGN", |b| {
+        let mut lhs = BS::with_bit_set(57);
+        let rhs = BS::with_bit_set(67);
+        b.iter(|| {lhs |= rhs; lhs})
     });
     group.bench_function("SHL", |b| {
         let mut set = BS::with_bit_set(57);
